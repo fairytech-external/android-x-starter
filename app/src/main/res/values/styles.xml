@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Fairy Technologies CONFIDENTIAL
+  ~ __________________
+  ~
+  ~ Copyright (C) Fairy Technologies, Inc - All Rights Reserved
+  ~
+  ~ NOTICE:  All information contained herein is, and remains the property of Fairy
+  ~ Technologies Incorporated and its suppliers, if any. The intellectual and technical
+  ~ concepts contained herein are proprietary to Fairy Technologies Incorporated
+  ~ and its suppliers and may be covered by U.S. and Foreign Patents, patents in
+  ~ process, and are protected by trade secret or copyright law.
+  ~
+  ~ Dissemination of this information,or reproduction or modification of this material
+  ~ is strictly forbidden unless prior written permission is obtained from Fairy
+  ~ Technologies Incorporated.
+  ~
+  -->
+
+<resources>
+
+    <!--   ImageView    -->
+    <style name="RoundedImageViewRounded">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="TextStyleSemibold">
+        <item name="android:fontFamily">@font/font_pretendard_semibold</item>
+        <item name="fontFamily">@font/font_pretendard_semibold</item>
+    </style>
+
+    <style name="TextStyleBold">
+        <item name="android:fontFamily">@font/font_pretendard_bold</item>
+        <item name="fontFamily">@font/font_pretendard_bold</item>
+    </style>
+
+    <style name="TextStyleMed">
+        <item name="android:fontFamily">@font/font_pretendard_medium</item>
+        <item name="fontFamily">@font/font_pretendard_medium</item>
+    </style>
+
+    <style name="TextStyleBody2Med" parent="TextStyleMed">
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <style name="TextStyleBody3Med" parent="TextStyleMed">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="TextStyleBody2Semibold" parent="TextStyleSemibold">
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <style name="TextStyleTitle2Semibold" parent="TextStyleSemibold">
+        <item name="android:textSize">22sp</item>
+    </style>
+</resources>

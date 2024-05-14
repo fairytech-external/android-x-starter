@@ -1,0 +1,23 @@
+<!--
+  ~ Fairy Technologies CONFIDENTIAL
+  ~ __________________
+  ~
+  ~ Copyright (C) Fairy Technologies, Inc - All Rights Reserved
+  ~
+  ~ NOTICE:  All information contained herein is, and remains the property of Fairy
+  ~ Technologies Incorporated and its suppliers, if any. The intellectual and technical
+  ~ concepts contained herein are proprietary to Fairy Technologies Incorporated
+  ~ and its suppliers and may be covered by U.S. and Foreign Patents, patents in
+  ~ process, and are protected by trade secret or copyright law.
+  ~
+  ~ Dissemination of this information,or reproduction or modification of this material
+  ~ is strictly forbidden unless prior written permission is obtained from Fairy
+  ~ Technologies Incorporated.
+  ~
+  -->
+
+<vector android:autoMirrored="true" android:height="24dp"
+    android:tint="#969696" android:viewportHeight="24"
+    android:viewportWidth="24" android:width="24dp" xmlns:android="http://schemas.android.com/apk/res/android">
+    <path android:fillColor="@android:color/white" android:pathData="M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z"/>
+</vector>
