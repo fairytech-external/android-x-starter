@@ -3,8 +3,8 @@ import io.netty.util.internal.UnstableApi
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
+    // TODO: firebase project와 연결해야하는 경우 아래 주석을 해제합니다.
+    // id("com.google.gms.google-services")
 }
 
 @Suppress("UnstableApiUsage")
