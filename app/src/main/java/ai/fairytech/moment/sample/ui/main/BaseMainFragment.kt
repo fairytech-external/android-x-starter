@@ -37,6 +37,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -91,6 +92,31 @@ open class BaseMainFragment : Fragment() {
                     .show()
             }
         }
+    private val checkedChangeListener =
+        CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+            val context = buttonView.context
+            if (isChecked) {
+                binding.startService.isEnabled = false
+                if (MomentSDK.isAppUsagePermissionGranted(context)) {
+                    handleStart()
+                } else {
+                    if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.Q) {
+                        val intent = Intent()
+                        intent.component = ComponentName(
+                            "com.android.settings",
+                            "com.android.settings.Settings\$UsageAccessSettingsActivity"
+                        )
+                        startActivity(intent)
+                    } else {
+                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        intent.data = Uri.fromParts("package", context.packageName, null)
+                        appUsagePermissionLauncher.launch(intent)
+                    }
+                }
+            } else {
+                handleStop()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +146,37 @@ open class BaseMainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val context = requireContext().applicationContext
+        // service가 os에 의해 종료됐거나, 사용자가 강제종료했을 수도 있으므로 restart를 시도.
+        MomentSDK.getInstance(context).restartIfNeeded(object :
+            MomentSDK.RestartResultCallback {
+            override fun onSuccess(resultCode: MomentSDK.RestartResultCode) {
+                if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED) {
+                    Toast.makeText(
+                        context,
+                        "restart에 성공했습니다: $resultCode",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED
+                    || resultCode == MomentSDK.RestartResultCode.SERVICE_ALREADY_RUNNING
+                ) {
+                    binding.startService.setOnCheckedChangeListener(null)
+                    binding.startService.isEnabled = true
+                    binding.startService.isChecked = moment.isRunning
+                    binding.startService.setOnCheckedChangeListener(checkedChangeListener)
+                }
+            }
+
+            override fun onFailure(exception: MomentException) {
+                Toast.makeText(context, "restart에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                Log.e(
+                    "MomentSDK",
+                    "restartIfNeeded onFailure(${exception.errorCode.name}): ${exception.message}"
+                )
+                binding.startService.isEnabled = true
+                binding.startService.isChecked = moment.isRunning
+            }
+        })
         moment.setUserId("test-user-id")
         /** 권한 관련 **/
         // 알림 권한 없을시 받음
@@ -130,29 +187,7 @@ open class BaseMainFragment : Fragment() {
         // 서비스를 시작하는 스위치
         binding.startService.isChecked = MomentSDK.isAppUsagePermissionGranted(context)
                 && moment.isRunning
-        binding.startService.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                binding.startService.isEnabled = false
-                if (MomentSDK.isAppUsagePermissionGranted(context)) {
-                    handleStart()
-                } else {
-                    if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.Q) {
-                        val intent = Intent()
-                        intent.component = ComponentName(
-                            "com.android.settings",
-                            "com.android.settings.Settings\$UsageAccessSettingsActivity"
-                        )
-                        startActivity(intent)
-                    } else {
-                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                        intent.data = Uri.fromParts("package", context.packageName, null)
-                        appUsagePermissionLauncher.launch(intent)
-                    }
-                }
-            } else {
-                handleStop()
-            }
-        }
+        binding.startService.setOnCheckedChangeListener(checkedChangeListener)
     }
 
     // 서비스 시작
