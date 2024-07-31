@@ -14,8 +14,8 @@ android {
     defaultConfig {
         applicationId = "ai.fairytech.moment.sample"
         minSdk = 24
-        compileSdk = 33
-        targetSdk = 33
+        compileSdk = 34
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -53,7 +53,7 @@ android {
 }
 
 dependencies {
-    implementation("ai.fairytech:moment-x:1.0.4")
+    implementation("ai.fairytech:moment-x:1.0.5")
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.0")
     implementation("com.google.android.material:material:1.8.0")

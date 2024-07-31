@@ -27,6 +27,7 @@ import ai.fairytech.moment.sample.OverlayService
 import ai.fairytech.moment.proto.CashbackProgram
 import ai.fairytech.moment.sample.ui.cashback.CashbackAdapter
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -147,7 +148,7 @@ open class BaseMainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val context = requireContext().applicationContext
         // service가 os에 의해 종료됐거나, 사용자가 강제종료했을 수도 있으므로 restart를 시도.
-        MomentSDK.getInstance(context).restartIfNeeded(object :
+        moment.restartIfNeeded(getConfig(context), object :
             MomentSDK.RestartResultCallback {
             override fun onSuccess(resultCode: MomentSDK.RestartResultCode) {
                 if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED) {
@@ -190,23 +191,25 @@ open class BaseMainFragment : Fragment() {
         binding.startService.setOnCheckedChangeListener(checkedChangeListener)
     }
 
+    private fun getConfig(context: Context): MomentSDK.Config {
+        return MomentSDK.Config(context)
+            .notificationChannelId(NotificationController.NOTIFICATION_CHANNEL_ID) // 알림 채널 아이디
+            .notificationId(NotificationController.NOTIFICATION_ID) // 알림 아이디
+            .notificationIconResId(R.drawable.baseline_person_24)
+            .serviceNotificationChannelId(NotificationController.SERVICE_NOTIFICATION_CHANNEL_ID) // 서비스를 위해 필요한 채널아이디
+            .serviceNotificationId(NotificationController.SERVICE_NOTIFICATION_ID)
+            .serviceNotificationIconResId(R.drawable.baseline_person_24)
+            .serviceNotificationTitle("인식 서비스")
+            .serviceNotificationText("인식 서비스가 동작 중입니다")
+    }
+
     // 서비스 시작
     private fun handleStart() {
         try {
             val context = requireContext().applicationContext
-            val config = MomentSDK.Config(context)
-                .notificationChannelId(NotificationController.NOTIFICATION_CHANNEL_ID) // 알림 채널 아이디
-                .notificationId(NotificationController.NOTIFICATION_ID) // 알림 아이디
-                .notificationIconResId(R.drawable.baseline_person_24)
-                .serviceNotificationChannelId(NotificationController.SERVICE_NOTIFICATION_CHANNEL_ID) // 서비스를 위해 필요한 채널아이디
-                .serviceNotificationId(NotificationController.SERVICE_NOTIFICATION_ID)
-                .serviceNotificationIconResId(R.drawable.baseline_person_24)
-                .serviceNotificationTitle("인식 서비스")
-                .serviceNotificationText("인식 서비스가 동작 중입니다")
-            val moment = MomentSDK.getInstance(context)
             moment.setMarketingPushEnabled(true)
             moment.setSendBubble(false)
-            moment.start(config, object : MomentSDK.ResultCallback {
+            moment.start(getConfig(context), object : MomentSDK.ResultCallback {
                 override fun onSuccess() {
                     Toast.makeText(context, "start에 성공했습니다.", Toast.LENGTH_SHORT).show()
                     binding.startService.isEnabled = true
