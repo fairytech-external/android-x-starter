@@ -53,7 +53,7 @@ android {
 }
 
 dependencies {
-    implementation("ai.fairytech:moment-x:1.0.5")
+    implementation("ai.fairytech:moment-x:1.0.6")
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.0")
     implementation("com.google.android.material:material:1.8.0")
