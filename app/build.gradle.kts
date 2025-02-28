@@ -53,7 +53,9 @@ android {
 }
 
 dependencies {
-    implementation("ai.fairytech:moment-x:1.0.6")
+    // Uncomment one of the following lines to include the Moment SDK.
+//    implementation("ai.fairytech:moment-x:1.0.14")
+//    implementation("ai.fairytech:moment-x-no-fg:1.0.14")
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("androidx.appcompat:appcompat:1.6.0")
     implementation("com.google.android.material:material:1.8.0")
