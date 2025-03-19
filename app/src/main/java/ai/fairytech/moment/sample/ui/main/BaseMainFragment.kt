@@ -178,7 +178,19 @@ open class BaseMainFragment : Fragment() {
                 binding.startService.isChecked = moment.isRunning
             }
         })
-        moment.setUserId("test-user-id")
+        moment.setUserId("test-user-id", object : MomentSDK.ResultCallback {
+            override fun onSuccess() {
+                // pass
+            }
+
+            override fun onFailure(exception: MomentException) {
+                Toast.makeText(context, "userId 설정에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                Log.e(
+                    "MomentSDK",
+                    "start onFailure(${exception.errorCode.name}): ${exception.message}"
+                )
+            }
+        })
         /** 권한 관련 **/
         // 알림 권한 없을시 받음
         if (!MomentSDK.isNotificationPermissionGranted(context) && canAskRuntimeNotiPermission()) {
@@ -207,7 +219,19 @@ open class BaseMainFragment : Fragment() {
     private fun handleStart() {
         try {
             val context = requireContext().applicationContext
-            moment.setMarketingPushEnabled(true)
+            moment.setUserId("test-user-id", object : MomentSDK.ResultCallback {
+                override fun onSuccess() {
+                    // pass
+                }
+
+                override fun onFailure(exception: MomentException) {
+                    Toast.makeText(context, "userId 설정에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    Log.e(
+                        "MomentSDK",
+                        "start onFailure(${exception.errorCode.name}): ${exception.message}"
+                    )
+                }
+            })
             moment.setSendBubble(false)
             moment.start(getConfig(context), object : MomentSDK.ResultCallback {
                 override fun onSuccess() {
@@ -218,6 +242,7 @@ open class BaseMainFragment : Fragment() {
 
                 override fun onFailure(exception: MomentException) {
                     Toast.makeText(context, "start에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
                     Log.e(
                         "MomentSDK",
                         "start onFailure(${exception.errorCode.name}): ${exception.message}"
