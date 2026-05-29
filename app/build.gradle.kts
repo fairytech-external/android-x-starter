@@ -34,7 +34,6 @@ android {
     flavorDimensionList.add("feature")
     productFlavors {
         register("default")
-        register("transaction")
     }
     buildFeatures {
         viewBinding = true
@@ -64,14 +63,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.4.1")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.github.bumptech.glide:glide:4.16.0")
-
-    // Add the dependency for the Cloud Functions library
-    // Import the BoM for the Firebase platform
-    "transactionImplementation"(platform("com.google.firebase:firebase-bom:32.1.1"))
-    // When using the BoM, you don"t specify versions in Firebase library dependencies
-    "transactionImplementation"("com.google.firebase:firebase-functions-ktx")
-    "transactionImplementation"("com.google.firebase:firebase-messaging")
-    "transactionImplementation"("com.google.firebase:firebase-crashlytics")
 
     // Test
     testImplementation("junit:junit:4.13.2")

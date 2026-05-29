@@ -33,22 +33,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Poc">
 
-        <service
-            android:name=".OverlayService"
-            android:enabled="true"
-            android:exported="false">
-        </service>
-
-        <receiver
-            android:name=".receiver.CashbackPageOpenReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="ai.fairytech.moment.action.CASHBACK_PAGE_OPENED" />
-            </intent-filter>
-        </receiver>
-
-
         <receiver
             android:name=".receiver.NotificationReceiver"
             android:enabled="true"
