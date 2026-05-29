@@ -147,47 +147,47 @@ open class BaseMainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val context = requireContext().applicationContext
-        // service가 os에 의해 종료됐거나, 사용자가 강제종료했을 수도 있으므로 restart를 시도.
-        moment.restartIfNeeded(getConfig(context), object :
-            MomentSDK.RestartResultCallback {
-            override fun onSuccess(resultCode: MomentSDK.RestartResultCode) {
-                if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED) {
-                    Toast.makeText(
-                        context,
-                        "restart에 성공했습니다: $resultCode",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED
-                    || resultCode == MomentSDK.RestartResultCode.SERVICE_ALREADY_RUNNING
-                ) {
-                    binding.startService.setOnCheckedChangeListener(null)
-                    binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning
-                    binding.startService.setOnCheckedChangeListener(checkedChangeListener)
-                }
-            }
-
-            override fun onFailure(exception: MomentException) {
-                Toast.makeText(context, "restart에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                Log.e(
-                    "MomentSDK",
-                    "restartIfNeeded onFailure(${exception.errorCode.name}): ${exception.message}"
-                )
-                binding.startService.isEnabled = true
-                binding.startService.isChecked = moment.isRunning
-            }
-        })
+        // NOTE: setUserId는 반드시 init/start 호출 전에 호출해야 합니다.
         moment.setUserId("test-user-id", object : MomentSDK.ResultCallback {
             override fun onSuccess() {
-                // pass
+                // setUserId 성공 후 init 호출
+                moment.init(getConfig(context), object :
+                    MomentSDK.RestartResultCallback {
+                    override fun onSuccess(resultCode: MomentSDK.RestartResultCode) {
+                        if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED) {
+                            Toast.makeText(
+                                context,
+                                "restart에 성공했습니다: $resultCode",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED
+                            || resultCode == MomentSDK.RestartResultCode.SERVICE_ALREADY_RUNNING
+                        ) {
+                            binding.startService.setOnCheckedChangeListener(null)
+                            binding.startService.isEnabled = true
+                            binding.startService.isChecked = moment.isRunning()
+                            binding.startService.setOnCheckedChangeListener(checkedChangeListener)
+                        }
+                    }
+
+                    override fun onFailure(exception: MomentException) {
+                        Toast.makeText(context, "init에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        Log.e(
+                            "MomentSDK",
+                            "init onFailure(${exception.errorCode.name}): ${exception.message}"
+                        )
+                        binding.startService.isEnabled = true
+                        binding.startService.isChecked = moment.isRunning()
+                    }
+                })
             }
 
             override fun onFailure(exception: MomentException) {
                 Toast.makeText(context, "userId 설정에 실패했습니다.", Toast.LENGTH_SHORT).show()
                 Log.e(
                     "MomentSDK",
-                    "start onFailure(${exception.errorCode.name}): ${exception.message}"
+                    "setUserId onFailure(${exception.errorCode.name}): ${exception.message}"
                 )
             }
         })
@@ -199,7 +199,7 @@ open class BaseMainFragment : Fragment() {
 
         // 서비스를 시작하는 스위치
         binding.startService.isChecked = MomentSDK.isAppUsagePermissionGranted(context)
-                && moment.isRunning
+                && moment.isRunning()
         binding.startService.setOnCheckedChangeListener(checkedChangeListener)
     }
 
@@ -237,7 +237,7 @@ open class BaseMainFragment : Fragment() {
                 override fun onSuccess() {
                     Toast.makeText(context, "start에 성공했습니다.", Toast.LENGTH_SHORT).show()
                     binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning
+                    binding.startService.isChecked = moment.isRunning()
                 }
 
                 override fun onFailure(exception: MomentException) {
@@ -248,12 +248,12 @@ open class BaseMainFragment : Fragment() {
                         "start onFailure(${exception.errorCode.name}): ${exception.message}"
                     )
                     binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning
+                    binding.startService.isChecked = moment.isRunning()
                 }
             })
         } catch (e: MomentException) {
             binding.startService.isEnabled = true
-            binding.startService.isChecked = moment.isRunning
+            binding.startService.isChecked = moment.isRunning()
         }
     }
 
@@ -264,7 +264,7 @@ open class BaseMainFragment : Fragment() {
                 override fun onSuccess() {
                     Toast.makeText(context, "stop에 성공했습니다.", Toast.LENGTH_SHORT).show()
                     binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning
+                    binding.startService.isChecked = moment.isRunning()
                 }
 
                 override fun onFailure(exception: MomentException) {
@@ -274,12 +274,12 @@ open class BaseMainFragment : Fragment() {
                         "start onFailure(${exception.errorCode.name}): ${exception.message}"
                     )
                     binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning
+                    binding.startService.isChecked = moment.isRunning()
                 }
             })
         } catch (e: MomentException) {
             binding.startService.isEnabled = true
-            binding.startService.isChecked = moment.isRunning
+            binding.startService.isChecked = moment.isRunning()
         }
     }
 

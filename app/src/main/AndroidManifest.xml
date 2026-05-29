@@ -48,6 +48,17 @@
             </intent-filter>
         </receiver>
 
+
+        <receiver
+            android:name=".receiver.NotificationReceiver"
+            android:enabled="true"
+            android:exported="false"
+            >
+            <intent-filter>
+                <action android:name="ai.fairytech.moment.action.NOTIFICATION_SENT" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".receiver.BusinessMatchReceiver"
             android:enabled="true"

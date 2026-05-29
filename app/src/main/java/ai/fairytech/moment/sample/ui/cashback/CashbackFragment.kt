@@ -62,7 +62,7 @@ class CashbackFragment : Fragment() {
 
             /* Cashback 프로그램을 받아와서 Recycler 뷰에 그림 */
             MomentSDK.getInstance(it).listCashback(object : MomentSDK.ListCashbackResultCallback {
-                override fun onSuccess(cashbackPrograms: MutableList<CashbackProgram>) {
+                override fun onSuccess(cashbackPrograms: List<CashbackProgram>) {
                     Log.e("MomentSDK", "listCashback onSuccess")
                     cashbackAdapter.setData(cashbackPrograms);
                 }
