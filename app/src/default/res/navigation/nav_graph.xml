@@ -29,9 +29,4 @@
         tools:layout="@layout/fragment_main">
     </fragment>
 
-    <fragment
-        android:id="@+id/CashbackFragment"
-        android:name="ai.fairytech.moment.sample.ui.cashback.CashbackFragment"
-        tools:layout="@layout/fragment_cashback">
-    </fragment>
 </navigation>

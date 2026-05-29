@@ -23,22 +23,16 @@ import ai.fairytech.moment.sample.R
 import ai.fairytech.moment.exception.MomentException
 import ai.fairytech.moment.sample.databinding.FragmentMainBinding
 import ai.fairytech.moment.sample.notification.NotificationController
-import ai.fairytech.moment.sample.OverlayService
-import ai.fairytech.moment.proto.CashbackProgram
-import ai.fairytech.moment.sample.ui.cashback.CashbackAdapter
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,9 +41,9 @@ import androidx.fragment.app.Fragment
 /**
  * 앱 시작시 구동되는 첫 Fragment.
  * 기능:
- *  - 권한 허용 및 서비스 시작
- *  - 캐시백 프로그램 리스트 제공
- *  - 마이페이지로 이동.
+ *  - 사용자 ID 설정 (setUserId)
+ *  - 인식 서비스 start / stop
+ *  - UI 실행 (launchUI)
  */
 open class BaseMainFragment : Fragment() {
 
@@ -64,58 +58,15 @@ open class BaseMainFragment : Fragment() {
             if (granted) {
                 Toast.makeText(context, "알림 권한 허용", Toast.LENGTH_SHORT).show()
             }
-            // 다른 앱 위에 그리기 권한 허용 (캐시백 사이트 진입 알림 애니메이션을 위해 이용됨.)
-            // Note: 기존에 다른앱위에 그리기 서비스 있을 시, layout만 추가하여 사용해도 됨
-            if (!Settings.canDrawOverlays(requireContext())) {
-                askDrawOverOtherAppsPermission()
-            }
         }
 
-    // 권한 허용
+    // 앱 사용기록 접근 권한 허용 후 콜백
     private val appUsagePermissionLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (MomentSDK.isAppUsagePermissionGranted(requireContext().applicationContext)) {
                 handleStart()
             } else {
-                binding.startService.isEnabled = true
-                binding.startService.isChecked = false
-            }
-        }
-
-    private val drawOverOtherAppsPermissionLauncher: ActivityResultLauncher<Intent> =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (Settings.canDrawOverlays(requireContext())) {
-                val intent = Intent(requireContext(), OverlayService::class.java)
-                requireContext().startService(intent)
-                Toast.makeText(context, "다른 앱 위에 그리기 권한 허용", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "다른 앱 위에 그리기 권한이 필요합니다.", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-    private val checkedChangeListener =
-        CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
-            val context = buttonView.context
-            if (isChecked) {
-                binding.startService.isEnabled = false
-                if (MomentSDK.isAppUsagePermissionGranted(context)) {
-                    handleStart()
-                } else {
-                    if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.Q) {
-                        val intent = Intent()
-                        intent.component = ComponentName(
-                            "com.android.settings",
-                            "com.android.settings.Settings\$UsageAccessSettingsActivity"
-                        )
-                        startActivity(intent)
-                    } else {
-                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                        intent.data = Uri.fromParts("package", context.packageName, null)
-                        appUsagePermissionLauncher.launch(intent)
-                    }
-                }
-            } else {
-                handleStop()
+                updateServiceButtons()
             }
         }
 
@@ -128,7 +79,6 @@ open class BaseMainFragment : Fragment() {
         super.onDestroy()
         notificationPermissionLauncher.unregister()
         appUsagePermissionLauncher.unregister()
-        drawOverOtherAppsPermissionLauncher.unregister()
     }
 
     override fun onCreateView(
@@ -137,6 +87,14 @@ open class BaseMainFragment : Fragment() {
     ): View {
         _binding = FragmentMainBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // launchUI 등 다른 화면을 다녀온 뒤 실제 실행 상태로 Start / Stop 버튼을 갱신
+        if (_binding != null) {
+            updateServiceButtons()
+        }
     }
 
     override fun onDestroyView() {
@@ -161,34 +119,18 @@ open class BaseMainFragment : Fragment() {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                        if (resultCode == MomentSDK.RestartResultCode.SERVICE_RESTARTED
-                            || resultCode == MomentSDK.RestartResultCode.SERVICE_ALREADY_RUNNING
-                        ) {
-                            binding.startService.setOnCheckedChangeListener(null)
-                            binding.startService.isEnabled = true
-                            binding.startService.isChecked = moment.isRunning()
-                            binding.startService.setOnCheckedChangeListener(checkedChangeListener)
-                        }
+                        updateServiceButtons()
                     }
 
                     override fun onFailure(exception: MomentException) {
-                        Toast.makeText(context, "init에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        Log.e(
-                            "MomentSDK",
-                            "init onFailure(${exception.errorCode.name}): ${exception.message}"
-                        )
-                        binding.startService.isEnabled = true
-                        binding.startService.isChecked = moment.isRunning()
+                        handleMomentFailure("init", exception, "init에 실패했습니다.")
+                        updateServiceButtons()
                     }
                 })
             }
 
             override fun onFailure(exception: MomentException) {
-                Toast.makeText(context, "userId 설정에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                Log.e(
-                    "MomentSDK",
-                    "setUserId onFailure(${exception.errorCode.name}): ${exception.message}"
-                )
+                handleMomentFailure("setUserId", exception, "userId 설정에 실패했습니다.")
             }
         })
         /** 권한 관련 **/
@@ -197,10 +139,16 @@ open class BaseMainFragment : Fragment() {
             notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // 서비스를 시작하는 스위치
-        binding.startService.isChecked = MomentSDK.isAppUsagePermissionGranted(context)
-                && moment.isRunning()
-        binding.startService.setOnCheckedChangeListener(checkedChangeListener)
+        // 1. 사용자 ID 설정
+        binding.btnSetUserId.setOnClickListener { handleSetUserId() }
+
+        // 2. 인식 서비스 start / stop
+        binding.btnStart.setOnClickListener { handleStartClicked() }
+        binding.btnStop.setOnClickListener { handleStop() }
+        updateServiceButtons()
+
+        // 3. UI 실행 (launchUI)
+        binding.btnLaunchUi.setOnClickListener { handleLaunchUI() }
     }
 
     private fun getConfig(context: Context): MomentSDK.Config {
@@ -215,45 +163,65 @@ open class BaseMainFragment : Fragment() {
             .serviceNotificationText("인식 서비스가 동작 중입니다")
     }
 
+    // 1. 사용자 ID 설정
+    private fun handleSetUserId() {
+        val context = requireContext().applicationContext
+        val userId = binding.etUserId.text.toString().trim()
+        if (userId.isEmpty()) {
+            Toast.makeText(context, "userId를 입력하세요.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        moment.setUserId(userId, object : MomentSDK.ResultCallback {
+            override fun onSuccess() {
+                Toast.makeText(context, "userId 설정에 성공했습니다: $userId", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onFailure(exception: MomentException) {
+                handleMomentFailure("setUserId", exception, "userId 설정에 실패했습니다.")
+            }
+        })
+    }
+
+    // 2. Start 버튼: 권한 확인 후 서비스 시작
+    private fun handleStartClicked() {
+        val context = requireContext().applicationContext
+        if (MomentSDK.isAppUsagePermissionGranted(context)) {
+            handleStart()
+        } else {
+            if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.Q) {
+                val intent = Intent()
+                intent.component = ComponentName(
+                    "com.android.settings",
+                    "com.android.settings.Settings\$UsageAccessSettingsActivity"
+                )
+                startActivity(intent)
+            } else {
+                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                intent.data = Uri.fromParts("package", context.packageName, null)
+                appUsagePermissionLauncher.launch(intent)
+            }
+        }
+    }
+
     // 서비스 시작
     private fun handleStart() {
         try {
             val context = requireContext().applicationContext
-            moment.setUserId("test-user-id", object : MomentSDK.ResultCallback {
-                override fun onSuccess() {
-                    // pass
-                }
-
-                override fun onFailure(exception: MomentException) {
-                    Toast.makeText(context, "userId 설정에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                    Log.e(
-                        "MomentSDK",
-                        "start onFailure(${exception.errorCode.name}): ${exception.message}"
-                    )
-                }
-            })
-            moment.setSendBubble(false)
             moment.start(getConfig(context), object : MomentSDK.ResultCallback {
                 override fun onSuccess() {
                     Toast.makeText(context, "start에 성공했습니다.", Toast.LENGTH_SHORT).show()
-                    binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning()
+                    // start 성공 = 실행 중. isRunning()은 콜백 시점에 아직 갱신 전일 수 있으므로 명시적으로 지정.
+                    updateServiceButtons(running = true)
                 }
 
                 override fun onFailure(exception: MomentException) {
-                    Toast.makeText(context, "start에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    handleMomentFailure("start", exception, "start에 실패했습니다.")
                     Toast.makeText(context, exception.message, Toast.LENGTH_SHORT).show()
-                    Log.e(
-                        "MomentSDK",
-                        "start onFailure(${exception.errorCode.name}): ${exception.message}"
-                    )
-                    binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning()
+                    updateServiceButtons()
                 }
             })
         } catch (e: MomentException) {
-            binding.startService.isEnabled = true
-            binding.startService.isChecked = moment.isRunning()
+            updateServiceButtons()
         }
     }
 
@@ -263,33 +231,54 @@ open class BaseMainFragment : Fragment() {
             moment.stop(object : MomentSDK.ResultCallback {
                 override fun onSuccess() {
                     Toast.makeText(context, "stop에 성공했습니다.", Toast.LENGTH_SHORT).show()
-                    binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning()
+                    // stop 성공 = 정지. isRunning()은 콜백 시점에 아직 갱신 전일 수 있으므로 명시적으로 지정.
+                    updateServiceButtons(running = false)
                 }
 
                 override fun onFailure(exception: MomentException) {
-                    Toast.makeText(context, "stop에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                    Log.e(
-                        "MomentSDK",
-                        "start onFailure(${exception.errorCode.name}): ${exception.message}"
-                    )
-                    binding.startService.isEnabled = true
-                    binding.startService.isChecked = moment.isRunning()
+                    handleMomentFailure("stop", exception, "stop에 실패했습니다.")
+                    updateServiceButtons()
                 }
             })
         } catch (e: MomentException) {
-            binding.startService.isEnabled = true
-            binding.startService.isChecked = moment.isRunning()
+            updateServiceButtons()
         }
+    }
+
+    // 3. UI 실행 (launchUI)
+    private fun handleLaunchUI() {
+        val context = requireContext().applicationContext
+        val redirectTo = binding.etRedirectTo.text.toString().trim()
+        val callback = object : MomentSDK.ResultCallback {
+            override fun onSuccess() {
+                // pass
+            }
+
+            override fun onFailure(exception: MomentException) {
+                handleMomentFailure("launchUI", exception, "launchUI에 실패했습니다.")
+            }
+        }
+        val config = getConfig(context)
+        if (redirectTo.isEmpty()) {
+            moment.launchUI(config, callback)
+        } else {
+            moment.launchUI(config, redirectTo, callback)
+        }
+    }
+
+    // MomentSDK 호출 실패시 토스트 + 로그 공통 처리
+    private fun handleMomentFailure(method: String, exception: MomentException, toastMessage: String) {
+        Toast.makeText(requireContext().applicationContext, toastMessage, Toast.LENGTH_SHORT).show()
+        Log.e("MomentSDK", "$method onFailure(${exception.errorCode.name}): ${exception.message}")
+    }
+
+    // 서비스 실행 상태에 따라 Start / Stop 버튼 활성화 상태 갱신
+    private fun updateServiceButtons(running: Boolean = moment.isRunning()) {
+        binding.btnStart.isEnabled = !running
+        binding.btnStop.isEnabled = running
     }
 
     private fun canAskRuntimeNotiPermission(): Boolean {
         return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU;
-    }
-
-    private fun askDrawOverOtherAppsPermission() {
-        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-        intent.data = Uri.fromParts("package", requireContext().packageName, null)
-        drawOverOtherAppsPermissionLauncher.launch(intent)
     }
 }
